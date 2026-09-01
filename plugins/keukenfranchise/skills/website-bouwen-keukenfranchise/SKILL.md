@@ -171,10 +171,30 @@ rest:
    anders, dan begeleid je de verhuizing of het aanpassen van de nameservers,
    stap voor stap.
 3. De gebruiker maakt een API-token voor jou aan: **My Profile → API Tokens →
-   Create Token**, met rechten op Pages en DNS voor de ene zone. Leg exact
-   uit waar hij klikt, en laat hem het token opslaan met het
-   geheimen-hulpje (zie hieronder) onder de naam `CLOUDFLARE_API_TOKEN` —
-   Terraform leest die naam vanzelf.
+   Create Token → Create Custom Token**. Leg exact uit waar hij klikt, en
+   dicteer déze rechten — dit is de vaste lijst waarmee jij alles kunt
+   (Pages-project, Functions, DNS, doorverwijzingen, beveiligingsregels en
+   zone-instellingen) zonder dat er halverwege een tweede token nodig is:
+
+   **Account** (bereik: All accounts):
+   - Cloudflare Pages → Edit
+   - Workers Scripts → Edit
+
+   **Zone** (bereik: All zones):
+   - Zone → Edit
+   - Zone Settings → Edit
+   - DNS → Edit
+   - Config Rules → Edit
+   - Single Redirect → Edit
+   - Origin Rules → Edit
+   - Zone WAF → Edit
+   - Page Rules → Edit
+
+   Loop de lijst na het aanmaken één keer samen langs ("staan er tien
+   regels?") — een recht dat mist geeft pas dagen later een vage
+   foutmelding. Laat hem het token daarna opslaan met het geheimen-hulpje
+   (zie hieronder) onder de naam `CLOUDFLARE_API_TOKEN` — Terraform leest
+   die naam vanzelf.
 4. Vanaf daar is alles van jou: de zone, de DNS-records, het Pages-project en
    de domeinkoppeling staan in Terraform.
 
