@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "keukenfranchise-skills",
+  "description": "De Claude Code-skills van Your Kitchen: websites bouwen en live zetten op Cloudflare, SEO- en concurrentieanalyse met Ahrefs, en kantoordocumenten maken.",
+  "owner": {
+    "name": "Your Kitchen",
+    "email": "grigor@yourkitchen.nl"
+  },
+  "plugins": [
+    {
+      "name": "keukenfranchise",
+      "description": "Websites bouwen en deployen naar Cloudflare, SEO-werkwijze met Ahrefs, en kantoordocumenten (Excel, Word, PowerPoint, PDF) - voor niet-technische collega's.",
+      "author": {
+        "name": "Your Kitchen"
+      },
+      "source": "./plugins/keukenfranchise"
+    }
+  ]
+}
