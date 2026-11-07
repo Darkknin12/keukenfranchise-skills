@@ -10,7 +10,7 @@ Eén plugin, `keukenfranchise`, met drie skills:
 
 | Skill                               | Doet                                                                |
 | ----------------------------------- | -------------------------------------------------------------------- |
-| `website-bouwen-keukenfranchise`    | Een statische Next.js-site bouwen en met Terraform naar Cloudflare.  |
+| `website-bouwen-keukenfranchise`    | Een statische Next.js-site bouwen en met Terraform naar Cloudflare, klaar voor KF AI. |
 | `SEO-website-keukenfranchise`       | On-page SEO, zoekwoordenonderzoek en concurrentieanalyse met Ahrefs. |
 | `kantoor-documenten-keukenfranchise`| Excel, Word, PowerPoint, PDF en CSV voor de administratie.           |
 
