@@ -80,11 +80,11 @@ terraform {
 
 ```hcl
 variable "cloudflare_account_id" { type = string }
-variable "zone_id"               { type = string } # of cloudflare_zone.site.id als de zone hier staat
-variable "domein"                { type = string } # de kale naam, bijvoorbeeld "keukenfranchise.nl"
-variable "project_naam"          { type = string } # kleine letters, cijfers en streepjes
-variable "github_eigenaar"       { type = string } # de organisatie
-variable "github_repo"           { type = string }
+variable "zone_id" { type = string }         # of cloudflare_zone.site.id als de zone hier staat
+variable "domein" { type = string }          # de kale naam, bijvoorbeeld "keukenfranchise.nl"
+variable "project_naam" { type = string }    # kleine letters, cijfers en streepjes
+variable "github_eigenaar" { type = string } # de organisatie
+variable "github_repo" { type = string }
 
 # Uit de outputs van infra/cloudflare-access (repo van de kennisassistent).
 variable "access_regel_id" {
