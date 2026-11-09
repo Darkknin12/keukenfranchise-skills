@@ -1,6 +1,6 @@
 ---
 name: website-bouwen-keukenfranchise
-description: Bouwt samen met een niet-technische gebruiker een statische Next.js-website met een klein serverloos achterkantje (formulieren, mail) en rolt hem met Terraform uit naar Cloudflare. Gebruik deze skill zodra iemand een website wil maken of live zetten.
+description: Bouwt samen met een niet-technische gebruiker een statische Next.js-website met een klein serverloos achterkantje (formulieren, mail) en rolt hem met Terraform uit naar Cloudflare, klaar om door collega's via KF AI (de Claude-app) bijgewerkt te worden. Gebruik deze skill zodra iemand een website wil maken of live zetten, of een bestaande site klaar wil maken voor KF AI.
 ---
 
 # Een website bouwen en live zetten op Cloudflare
@@ -42,11 +42,62 @@ hoe je bouwt.
    in 2024 gestopt, en oudere handleidingen die het aanraden zijn achterhaald.
    De API-sleutel komt in een Cloudflare-secret, nooit in de code.
 4. **Infrastructuur met Terraform**: het Cloudflare Pages-project, de
-   DNS-records en de domeinkoppeling staan in `.tf`-bestanden in de map
-   `infra/`. Zo is de hele hosting reproduceerbaar en staat er niets dat
-   alleen ooit met de hand is aangeklikt.
-5. **Versiebeheer op GitHub** vanaf het eerste moment. Elke werkende stap een
-   commit, zodat er altijd een weg terug is.
+   DNS-records, de domeinkoppeling en de Access-app voor de voorbeelden staan
+   in `.tf`-bestanden in de map `infra/`. Zo is de hele hosting
+   reproduceerbaar en staat er niets dat alleen ooit met de hand is
+   aangeklikt. Elke DNS-naam en elk domein is een **eigen resource**, nooit
+   een lijst (zie "Samenwerken via KF AI").
+5. **GitHub is de bron, Cloudflare bouwt (Git-integratie).** Het
+   Pages-project hangt aan de GitHub-repository: een merge naar `main` zet de
+   site live, een push op een tak `website/…` geeft een voorbeeld achter een
+   Microsoft-login. Gebruik **nooit** `wrangler pages deploy` (Direct Upload):
+   zo'n project kan later niet meer aan Git gekoppeld worden, en dan kan
+   niemand de site via de Claude-app bijwerken. Elke werkende stap een
+   commit, zodat er altijd een weg terug is. Hoe: zie
+   `references/git-integratie-en-terraform.md`.
+6. **Teksten in `content/`, foto's en downloads in `public/`.** Alle tekst
+   die een bezoeker leest, staat als Markdown (of YAML/JSON) in `content/`,
+   en de pagina's lezen die map bij de build. Markdown zonder ruwe HTML: geen
+   `rehype-raw`, geen MDX. Waarom: collega's wijzigen de site via de
+   Claude-app, en die mag alleen in `content/` en `public/` schrijven; een
+   tekst in een `.tsx`-bestand is voor hen onbereikbaar. Hoe, en waarom
+   veilig: zie `references/inhoud-in-content.md`.
+
+## Samenwerken via KF AI (de Claude-app)
+
+Na de livegang werken collega's zelf aan de site, via KF AI in de
+Claude-app: "zet de nieuwe openingstijden op de contactpagina". Zo werkt dat:
+
+- De assistent (de GitHub-app `ykai-websites`) maakt een tak
+  `website/<onderwerp>-<datum>-<initialen>`, zet de wijziging erop en opent
+  een PR. Hij schrijft alleen in `content/` en `public/`.
+- Cloudflare bouwt een voorbeeld; de collega bekijkt het na een
+  Microsoft-login.
+- Een publiceerder bevestigt in de Claude-app; de assistent merget de PR, en
+  Cloudflare zet de site live. Publiceren is dus mergen.
+- Een publiceerder kan via de Claude-app ook een extra naam koppelen
+  (`actie.<domein>`). Die DNS-records hebben het commentaar `ykai:<site>`.
+
+Wat dat voor jou betekent, altijd:
+
+- **Teksten in `content/`** (punt 6 hierboven).
+- **Elke tak begint met `website/`**, ook die van jou als ontwikkelaar
+  (bijvoorbeeld `website/code-nieuw-menu`). Cloudflare bouwt alleen die
+  takken, en zonder build geen check, dus geen merge. De Claude-app publiceert
+  een PR met code niet; die merge je zelf.
+- **Eén eigenaar per naam.** Terraform beheert het Pages-project, de kale
+  naam en `www`, de mailrecords (Resend) en de Access-app; de assistent
+  alleen de extra namen. Elke naam is een eigen resource, nooit een lijst,
+  anders ziet Terraform de namen van de assistent als drift en haalt hij ze
+  weg. Een naam met commentaar `ykai:<site>` zet je niet in Terraform zonder
+  hem eerst te laten ontkoppelen. Na zo'n koppeling moet `terraform plan`
+  "No changes" geven.
+- **De ruleset op `main` zet een mens**, niet jij: PR verplicht, de
+  Cloudflare Pages-check verplicht, tak bij met `main`, geen force-push en
+  geen delete, `ykai-websites` niet in de bypass-lijst; squash-merge en
+  "Automatically delete head branches" aan. Een agent wijzigt geen rulesets.
+  Dicteer de stappen uit `references/github-ruleset.md` en controleer daarna
+  alleen-lezen.
 
 ## Welke skills je erbij gebruikt
 
@@ -128,8 +179,9 @@ niet om vragen, dus jij doet het gewoon:
   (niet hotlinken) en houd een lijstje bij van welke foto's nog door eigen
   materiaal vervangen moeten worden; dat lijstje hoort in de README.
 - **Eerst een proefversie, dan pas live.** Cloudflare Pages geeft elke
-  wijziging automatisch een proefadres; laat de gebruiker dáár kijken en
-  akkoord geven voordat het echte adres wijzigt.
+  push op een tak `website/…` automatisch een proefadres (na een
+  Microsoft-login); laat de gebruiker dáár kijken en akkoord geven voordat je
+  de PR naar `main` merget.
 - **De lockfile en een README horen in de repository.** Wie het project over
   een jaar opent, moet exact dezelfde bouwstenen krijgen en kunnen lezen hoe
   het werkt.
@@ -163,8 +215,13 @@ rest:
 
 **Domeinnaam en Cloudflare.** Zelfde verdeling:
 
-1. De gebruiker maakt het gratis Cloudflare-account aan (cloudflare.com, met
-   het zakelijke e-mailadres) en bevestigt zijn e-mail.
+1. **Een site van Your Kitchen komt in het Cloudflare-account van het
+   bedrijf**, niet in een eigen account: daar staan de Microsoft-login voor
+   de voorbeelden en de koppeling met KF AI. Laat de gebruiker de beheerder
+   vragen om toegang tot dat account. Alleen voor een site die nooit via KF
+   AI bewerkt wordt, maakt hij een eigen gratis account aan (cloudflare.com,
+   met het zakelijke e-mailadres) en bevestigt hij zijn e-mail; zet die
+   uitzondering met de reden in de `CLAUDE.md`.
 2. Een domeinnaam registreren kan meteen bij Cloudflare (Domain Registration
    → Register Domain) — dat is de simpelste route, want dan staat de DNS er
    direct goed en betaal je inkoopprijs. Heeft hij het domein al ergens
@@ -179,6 +236,7 @@ rest:
    **Account** (bereik: All accounts):
    - Cloudflare Pages → Edit
    - Workers Scripts → Edit
+   - Access: Apps and Policies → Edit (voor de Access-app van de voorbeelden)
 
    **Zone** (bereik: All zones):
    - Zone → Edit
@@ -190,13 +248,16 @@ rest:
    - Zone WAF → Edit
    - Page Rules → Edit
 
-   Loop de lijst na het aanmaken één keer samen langs ("staan er tien
+   Loop de lijst na het aanmaken één keer samen langs ("staan er elf
    regels?") — een recht dat mist geeft pas dagen later een vage
    foutmelding. Laat hem het token daarna opslaan met het geheimen-hulpje
    (zie hieronder) onder de naam `CLOUDFLARE_API_TOKEN` — Terraform leest
    die naam vanzelf.
-4. Vanaf daar is alles van jou: de zone, de DNS-records, het Pages-project en
-   de domeinkoppeling staan in Terraform.
+4. Vanaf daar is alles van jou: de zone, de DNS-records, het Pages-project,
+   de domeinkoppeling en de Access-app staan in Terraform. Wat de gebruiker
+   daarvoor nog één keer moet doen (de Cloudflare-app op GitHub, de ID's van
+   de Access-regel en de aanmeldbron), staat in
+   `references/git-integratie-en-terraform.md`.
 
 ## Sleutels en wachtwoorden: de vaste plek, en jouw regels
 
@@ -256,6 +317,16 @@ vóór de eerste code. Erin staat, kort en actueel:
   vastgelopen ("de contactfunction verwacht veld X", "dit domein zit nog bij
   de oude registrar"). Eén keer opschrijven is goedkoper dan twee keer
   vastlopen.
+- **Samenwerken via KF AI**, met precies deze regel, zodat een volgende
+  sessie niet schrikt van PR's die ze niet zelf maakte en geen namen van de
+  assistent overneemt:
+
+  > Wijzigingen via KF AI komen als PR van `ykai-websites[bot]` op een tak
+  > `website/…`. Namen met DNS-commentaar `ykai:<site>` zijn van de
+  > assistent; zet ze niet in Terraform zonder ze eerst te ontkoppelen.
+
+  Zet erbij dat teksten in `content/` staan en foto's in `public/`, en dat
+  elke eigen tak ook met `website/` begint.
 
 **Bijwerken is onderdeel van het werk, geen extraatje.** Na elke afgeronde
 stap — een feature af, iets live gezet, een keuze gemaakt, een probleem
@@ -284,28 +355,45 @@ het eerlijk als iets wat er staat een probleem is. Ontbreekt de CLAUDE.md
 (een ouder project), maak hem dan als eerste stap aan op basis van wat je in
 de map aantreft, en zeg erbij wat je níet zeker weet.
 
+**Een bestaande site migreren.** Ga bij elke bestaande site na of het
+Pages-project Git-integratie heeft (geen Direct Upload) en of de teksten in
+`content/` staan. Zo niet, dan kan niemand hem via KF AI bijwerken. Dan:
+teksten naar `content/`, en zo nodig een nieuw project met Git-integratie
+via Terraform en het domein verhuizen. De stappen, in volgorde, staan in
+`references/bestaande-site-migreren.md`. Vertel de gebruiker eerst wat je
+vond en wat er moet gebeuren; een domeinverhuizing kan de site enkele
+minuten offline zetten.
+
 ## De volgorde van het werk
 
 1. **Vraag wat de site moet doen** (doel, pagina's, uitstraling, teksten of
    voorbeelden die de gebruiker al heeft). Eén vraag per keer. Leg de
    antwoorden meteen vast in de `CLAUDE.md` (zie "Het geheugen van het
    project") — dat bestand is er vóór de eerste regel code.
-2. **Bouw de site lokaal** en laat hem zien. Itereren tot de gebruiker
-   tevreden is.
+2. **Bouw de site lokaal**, met alle teksten vanaf het begin in `content/`,
+   en laat hem zien. Itereren tot de gebruiker tevreden is.
 3. **Zet het achterkantje op** (formulier → mail) en test het lokaal met
    `wrangler pages dev`.
-4. **GitHub**: maak een privé-repository en push. Vraag de gebruiker in te
-   loggen met `gh auth login` als dat nog niet gebeurd is.
-5. **Cloudflare**: begeleid de gebruiker bij het aanmaken van een gratis
-   Cloudflare-account en een API-token (leg exact uit waar hij klikt; het
-   token heeft rechten nodig op Pages en DNS). Schrijf de Terraform, draai
-   `terraform plan`, laat in één zin zien wat er gemaakt gaat worden, en pas
-   dan `terraform apply`.
-6. **Deploy en controleer**: zet de site live, open hem echt, test het
-   formulier echt (laat de gebruiker de testmail bevestigen), en controleer
-   de headers.
-7. **Leg de werkwijze vast** in een korte `README.md` in gewone taal: hoe zet
-   ik een nieuwe versie live, waar staan de sleutels, wat kost het (niets,
+4. **GitHub**: maak een privé-repository in de organisatie waar de app
+   `ykai-websites` op staat, en push. Vraag de gebruiker in te loggen met
+   `gh auth login` als dat nog niet gebeurd is.
+5. **Cloudflare**: begeleid de gebruiker bij de toegang tot het
+   Cloudflare-account, het API-token (de vaste lijst hierboven) en de
+   Cloudflare-app op GitHub. Schrijf de Terraform volgens
+   `references/git-integratie-en-terraform.md` (project mét Git-integratie,
+   Access-app, kale naam en `www`, mailrecords), draai `terraform plan`, laat
+   in één zin zien wat er gemaakt gaat worden, en pas dan `terraform apply`.
+6. **Live en controleren**: werk op een tak `website/…`, bekijk het voorbeeld
+   (na de Microsoft-login), en merge de PR naar `main`; Cloudflare zet de site
+   dan live. Open hem echt, test het formulier echt (laat de gebruiker de
+   testmail bevestigen), en controleer de headers.
+7. **GitHub-instellingen door de mens**: dicteer de ruleset, squash-merge en
+   het opruimen van takken (`references/github-ruleset.md`) en controleer ze
+   alleen-lezen. Laat een AI-beheerder de site in KF AI zetten
+   (Koppelingen → Websites) en de app `ykai-websites` op de repo zetten.
+8. **Leg de werkwijze vast** in een korte `README.md` in gewone taal: hoe zet
+   ik een nieuwe versie live (merge naar `main`, of publiceren via KF AI),
+   waar staan de teksten, waar staan de sleutels, wat kost het (niets,
    tenzij het hard groeit).
 
 ## Klaar is pas klaar — loop dit na vóór je "hij staat live" zegt
@@ -315,6 +403,15 @@ de map aantreft, en zeg erbij wat je níet zeker weet.
 - [ ] Elke pagina heeft een titel en metabeschrijving; sitemap en favicon
       staan erop; de 404-pagina bestaat.
 - [ ] `npm audit` is gedraaid en de beveiligingsheaders staan erop.
+- [ ] Alle teksten staan in `content/`, foto's en downloads in `public/`; een
+      aangepaste tekst in `content/` verandert na de build echt op de site.
+- [ ] Het Pages-project heeft Git-integratie, alleen takken `website/*`
+      krijgen een voorbeeld, en dat voorbeeld vraagt om een Microsoft-login.
+      Het echte adres vraagt dat niet.
+- [ ] Elke DNS-naam en elk domein is een eigen resource; `terraform plan`
+      geeft "No changes".
+- [ ] De mens heeft de ruleset, squash-merge en het opruimen van takken
+      gezet, en jij hebt het alleen-lezen gecontroleerd.
 - [ ] Er staat geen enkele plaatshoudertekst meer op de site, of de gebruiker
       weet precies welke nog vervangen moeten worden.
 - [ ] Alles is gecommit en gepusht, en de README klopt met hoe het nu werkt.
